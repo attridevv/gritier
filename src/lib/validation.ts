@@ -3,8 +3,8 @@ import { z } from "zod";
 export const checkInSchema = z.object({
   sleepHours: z.number().min(0).max(24).optional(),
   sleepQuality: z.number().min(1).max(10).optional(),
-  restingHeartRate: z.number().min(30).max(120).optional(),
-  bodyweight: z.number().min(30).max(200).optional(),
+  restingHeartRate: z.number().optional(),
+  bodyweight: z.number().optional(),
   energyLevel: z.number().min(1).max(10).optional(),
   motivation: z.number().min(1).max(10).optional(),
   mood: z.enum(["good", "neutral", "bad", "anxious"]).optional(),
@@ -13,85 +13,150 @@ export const checkInSchema = z.object({
   hydrationHit: z.boolean().optional(),
   proteinHit: z.boolean().optional(),
   mobilityCompleted: z.boolean().optional(),
-  steps: z.number().min(0).optional(),
-  groinPain: z.number().min(0).max(10).optional(),
-  lowerBackPain: z.number().min(0).max(10).optional(),
-  shoulderPain: z.number().min(0).max(10).optional(),
-  kneePain: z.number().min(0).max(10).optional(),
-  hamstringTightness: z.number().min(0).max(10).optional(),
-  notes: z.string().max(1000).optional(),
+  steps: z.number().optional(),
+  groinPain: z.number().min(0).max(10).default(0),
+  lowerBackPain: z.number().min(0).max(10).default(0),
+  shoulderPain: z.number().min(0).max(10).default(0),
+  kneePain: z.number().min(0).max(10).default(0),
+  hamstringTightness: z.number().min(0).max(10).default(0),
+  habits: z.record(z.string(), z.boolean()).optional(),
+  habitScore: z.number().optional(),
+  notes: z.string().max(500).optional(),
 });
 
-export const runSchema = z.object({
-  distance: z.number().min(0.1),
-  duration: z.number().min(1), // seconds
-  pace: z.number().optional(),
-  avgHr: z.number().min(30).max(250).optional(),
-  maxHr: z.number().min(30).max(250).optional(),
-  cadence: z.number().min(50).max(250).optional(),
+export const activitySchema = z.object({
+  type: z.enum(["run", "strength", "cycle", "swim", "hike", "yoga", "recovery", "other"]),
+  name: z.string().min(1).max(100),
+  date: z.string().datetime(),
+  duration: z.number().min(1),
+  rpe: z.number().min(1).max(10).optional(),
+  distance: z.number().optional(),
   elevation: z.number().optional(),
-  rpe: z.number().min(1).max(10).optional(),
-  type: z.enum(["easy", "tempo", "intervals", "longRun", "recovery", "race"]).optional(),
-  terrain: z.enum(["road", "trail", "track", "treadmill"]).optional(),
-  notes: z.string().max(1000).optional(),
-});
-
-export const workoutSchema = z.object({
-  type: z.enum(["strength", "mobility", "crossTraining", "rehab"]),
-  duration: z.number().min(1).optional(),
-  rpe: z.number().min(1).max(10).optional(),
-  notes: z.string().max(1000).optional(),
+  calories: z.number().optional(),
+  avgHr: z.number().optional(),
+  maxHr: z.number().optional(),
+  cadence: z.number().optional(),
+  notes: z.string().max(500).optional(),
+  weather: z.record(z.string(), z.unknown()).optional(),
+  terrain: z.string().optional(),
+  isPublic: z.boolean().optional(),
   exercises: z.array(z.object({
     name: z.string().min(1),
-    category: z.enum(["squat", "hinge", "push", "pull", "carry", "accessory"]).optional(),
-    weight: z.number().min(0).optional(),
-    sets: z.number().min(1).max(20).optional(),
-    reps: z.number().min(1).max(100).optional(),
+    category: z.string().optional(),
+    weight: z.number().optional(),
+    sets: z.number().optional(),
+    reps: z.number().optional(),
     rpe: z.number().min(1).max(10).optional(),
     tempo: z.string().optional(),
+    rest: z.number().optional(),
     painNotes: z.string().optional(),
     fatigueNotes: z.string().optional(),
   })).optional(),
 });
 
-export const injurySchema = z.object({
-  location: z.enum(["groin", "lowerBack", "shoulder", "knee", "hamstring", "ankle", "hip", "wrist", "elbow"]),
-  side: z.enum(["left", "right", "bilateral"]).optional(),
-  severity: z.number().min(0).max(10),
-  status: z.enum(["active", "recovered", "monitoring"]).optional(),
-  type: z.string().optional(),
-  mechanism: z.string().optional(),
-  notes: z.string().max(1000).optional(),
-});
-
-export const mobilitySchema = z.object({
-  duration: z.number().min(1),
-  type: z.enum(["stretching", "foamRolling", "rehab", "breathwork"]),
-  exercises: z.array(z.string()).optional(),
-  notes: z.string().optional(),
+export const mealSchema = z.object({
+  name: z.string().min(1).max(50),
+  date: z.string().datetime(),
+  mealType: z.enum(["breakfast", "lunch", "dinner", "snack", "preworkout", "postworkout"]),
+  foods: z.array(z.object({
+    name: z.string(),
+    serving: z.string(),
+    calories: z.number(),
+    protein: z.number(),
+    carbs: z.number(),
+    fat: z.number(),
+    fiber: z.number().optional(),
+  })),
+  totalCalories: z.number(),
+  totalProtein: z.number(),
+  totalCarbs: z.number(),
+  totalFat: z.number(),
+  totalFiber: z.number().optional(),
+  notes: z.string().max(500).optional(),
 });
 
 export const profileSchema = z.object({
-  height: z.number().min(100).max(250).optional(),
-  weight: z.number().min(30).max(200).optional(),
-  bodyFat: z.number().min(3).max(50).optional(),
-  age: z.number().min(13).max(100).optional(),
-  sex: z.enum(["male", "female", "other"]).optional(),
+  height: z.number().optional(),
+  weight: z.number().optional(),
+  bodyFat: z.number().optional(),
+  age: z.number().optional(),
+  sex: z.string().optional(),
+  restingHR: z.number().optional(),
+  vo2Max: z.number().optional(),
+  trainingAge: z.number().optional(),
   raceGoal: z.string().optional(),
   raceDistance: z.string().optional(),
   raceDate: z.string().datetime().optional(),
-  restingHR: z.number().min(30).max(120).optional(),
-  vo2Max: z.number().min(20).max(90).optional(),
-  trainingAge: z.number().min(0).max(50).optional(),
-  mobilityScore: z.number().min(1).max(10).optional(),
-  weeklyAvailability: z.number().min(1).max(30).optional(),
+  prs: z.record(z.string(), z.number()).optional(),
+  strengthPriorities: z.array(z.string()).optional(),
+  endurancePriorities: z.array(z.string()).optional(),
+  weeklyAvailability: z.number().optional(),
   recoveryCapacity: z.enum(["low", "medium", "high"]).optional(),
-  notes: z.string().optional(),
+  preferredSplit: z.array(z.string()).optional(),
+  equipmentAccess: z.array(z.string()).optional(),
+  dietaryPreference: z.string().optional(),
+  allergies: z.array(z.string()).optional(),
+  targetCalories: z.number().optional(),
+  targetProtein: z.number().optional(),
+  targetCarbs: z.number().optional(),
+  targetFat: z.number().optional(),
+  isPublic: z.boolean().optional(),
+  bio: z.string().max(300).optional(),
+  location: z.string().optional(),
 });
 
-export type CheckInInput = z.infer<typeof checkInSchema>;
-export type RunInput = z.infer<typeof runSchema>;
-export type WorkoutInput = z.infer<typeof workoutSchema>;
-export type InjuryInput = z.infer<typeof injurySchema>;
-export type MobilityInput = z.infer<typeof mobilitySchema>;
-export type ProfileInput = z.infer<typeof profileSchema>;
+export const planSchema = z.object({
+  name: z.string().min(1).max(100),
+  type: z.enum(["running", "strength", "hybrid", "triathlon", "custom"]),
+  phase: z.string().optional(),
+  distance: z.string().optional(),
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
+  raceDate: z.string().datetime().optional(),
+  totalWeeks: z.number().min(1).max(52),
+  weeksPerMesocycle: z.number().min(1).max(8).default(4),
+  isAdaptive: z.boolean().optional(),
+  autoProgress: z.boolean().optional(),
+  baselineFitness: z.record(z.string(), z.unknown()).optional(),
+  preferredPaces: z.record(z.string(), z.number()).optional(),
+});
+
+export const planDaySchema = z.object({
+  date: z.string().datetime(),
+  weekNumber: z.number(),
+  dayOfWeek: z.number().min(0).max(6),
+  workoutType: z.string().optional(),
+  name: z.string().optional(),
+  description: z.string().optional(),
+  targetDistance: z.number().optional(),
+  targetDuration: z.number().optional(),
+  targetRPE: z.number().min(1).max(10).optional(),
+  targetPace: z.number().optional(),
+  paceWindow: z.object({ min: z.string(), max: z.string() }).optional(),
+  structure: z.array(z.any()).optional(),
+  notes: z.string().optional(),
+  cue: z.string().optional(),
+});
+
+export const socialPostSchema = z.object({
+  text: z.string().max(500).optional(),
+  activityId: z.string().optional(),
+  images: z.array(z.string()).optional(),
+  visibility: z.enum(["public", "friends", "private"]).default("public"),
+  tags: z.array(z.string()).optional(),
+});
+
+export const socialCommentSchema = z.object({
+  postId: z.string(),
+  text: z.string().min(1).max(500),
+});
+
+export const injurySchema = z.object({
+  location: z.string(),
+  side: z.enum(["left", "right", "bilateral"]).optional(),
+  severity: z.number().min(0).max(10),
+  status: z.enum(["active", "monitoring", "recovered"]).default("active"),
+  type: z.string().optional(),
+  mechanism: z.string().optional(),
+  notes: z.string().optional(),
+});

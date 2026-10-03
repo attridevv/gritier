@@ -1,34 +1,24 @@
-import "server-only";
+import { prisma } from "./db";
 
-import { prisma } from "@/lib/db";
+const MAX_RETRIES = 5;
+const BASE_DELAY = 2000;
 
-/**
- * Retries a Prisma operation when the database is cold.
- * Supabase free tier pauses databases after inactivity.
- * This wrapper retries up to 3 times with a 1.5s delay between retries.
- */
-export async function withDbRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
-  for (let attempt = 1; attempt <= retries; attempt++) {
+export async function withDbRetry<T>(fn: () => Promise<T>): Promise<T> {
+  let lastError: Error | null = null;
+
+  for (let i = 0; i < MAX_RETRIES; i++) {
     try {
+      await prisma.$queryRaw`SELECT 1`;
       return await fn();
-    } catch (error: any) {
-      const isConnectionError =
-        error?.message?.includes("Can't reach database") ||
-        error?.message?.includes("Connection terminated") ||
-        error?.message?.includes("timeout") ||
-        error?.code === "P1001" ||
-        error?.code === "P1002" ||
-        error?.code === "P1017";
-
-      if (isConnectionError && attempt < retries) {
-        console.log(`DB cold start detected, retrying (${attempt}/${retries})...`);
-        await new Promise(r => setTimeout(r, 1500 * attempt));
+    } catch (err: any) {
+      lastError = err;
+      if (err?.code === "ECONNREFUSED" || err?.code === "57P03" || err?.message?.includes("password")) {
+        await new Promise((r) => setTimeout(r, BASE_DELAY * Math.pow(2, i)));
         continue;
       }
-
-      throw error;
+      throw err;
     }
   }
 
-  throw new Error("Database unavailable after retries");
+  throw lastError ?? new Error("Database connection failed after retries");
 }

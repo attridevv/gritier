@@ -1,137 +1,154 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/utils";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Brain, Loader2, Sparkles, Target, Shield, TrendingUp, Clock } from "lucide-react";
+import { Brain, Zap, TrendingUp, AlertTriangle, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
+
+const mockInsights = [
+  {
+    id: 1,
+    type: "weekly",
+    date: "Sep 20, 2026",
+    title: "Week 6 Review — Training load optimal, push tempo",
+    readiness: 78,
+    acwr: 1.12,
+    injuryRisk: "low",
+    content:
+      "Your training load has been in the sweet spot all week (ACWR 1.12). Readiness scores averaged 76, with good sleep (7.2h avg) and stable RHR. Your tempo run on Thursday had great pace consistency — consider extending the tempo block by 1km next week.\n\nNutrition is tracking well at 90% calorie compliance. Protein intake is solid. Consider adding a post-run carb source to support recovery.\n\nNo injury flags detected. Groin pain at 1/10 is negligible. Keep up the mobility work — you logged 4/7 sessions this week.",
+    recommendations: [
+      "Extend Thursday tempo by 1km next week",
+      "Add 30g post-run carbs",
+      "Maintain mobility at 4+ sessions/week",
+    ],
+    categories: ["training", "nutrition", "recovery"],
+  },
+  {
+    id: 2,
+    type: "daily",
+    date: "Sep 19, 2026",
+    title: "Today's Readiness — Good to train",
+    readiness: 82,
+    acwr: 1.08,
+    injuryRisk: "low",
+    content:
+      "Readiness at 82 — you're in the green. Sleep was solid (7.8h, quality 8/10). RHR at baseline. Energy and motivation both 8/10. Go for the planned tempo session.\n\nMinor hamstring tightness (2/10) — add 5 min dynamic warmup focusing on hip mobility.",
+    recommendations: ["Proceed with tempo session", "Add 5 min hip mobility warmup"],
+    categories: ["readiness", "training"],
+  },
+  {
+    id: 3,
+    type: "nutrition",
+    date: "Sep 18, 2026",
+    title: "Nutrition Insight — TDEE recalibrated",
+    readiness: null,
+    acwr: null,
+    injuryRisk: null,
+    content:
+      "Based on your last 14 days of weight and nutrition data, your estimated TDEE has been recalibrated from 2,700 to 2,650 kcal/day. This suggests a slight metabolic adaptation — normal during a cut.\n\nYour current intake of 2,420 kcal/day puts you at a ~230 kcal deficit, producing ~0.2 kg/week loss. To hit your target of 0.5 kg/week, consider reducing by another 150-200 kcal or adding 20 min of light cardio 3x/week.",
+    recommendations: [
+      "Reduce intake by 150-200 kcal OR add light cardio",
+      "Monitor weight trend for 7 days",
+    ],
+    categories: ["nutrition"],
+  },
+];
 
 export default function InsightsPage() {
-  const [insights, setInsights] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [generated, setGenerated] = useState<any>(null);
-
-  useEffect(() => {
-    fetch("/api/insights").then(r => r.json()).then(setInsights);
-  }, []);
-
-  const generateInsight = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/insights", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      const data = await res.json();
-      setGenerated(data);
-      setInsights(prev => [data, ...prev]);
-    } catch (err) {
-      console.error(err);
-    }
-    setLoading(false);
-  };
+  const [expandedId, setExpandedId] = useState<number | null>(1);
 
   return (
-    <div className="p-4 md:p-8 space-y-6">
-      <div className="flex justify-between items-start">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-zinc-100">AI Coach</h1>
-          <p className="text-zinc-500 mt-1 text-sm">Intelligent performance analysis and guidance</p>
+          <h1 className="text-2xl font-display font-bold text-ink">Insights</h1>
+          <p className="text-sm text-ink-muted mt-1">AI-powered coaching analysis</p>
         </div>
-        <Button onClick={generateInsight} disabled={loading}
-          className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200">
-          {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-          {loading ? "Analyzing..." : "Generate Report"}
+        <Button size="sm">
+          <Zap className="w-4 h-4 mr-1" /> Generate Report
         </Button>
       </div>
 
-      {/* Latest Generated Insight */}
-      {(generated || insights[0]) && (
-        <Card className="bg-zinc-900 border-zinc-800 border-l-4 border-l-blue-500">
-          <CardHeader>
-            <CardTitle className="text-sm text-zinc-300 flex items-center gap-2">
-              <Brain className="h-4 w-4 text-blue-400" />
-              {generated ? "New Analysis" : "Latest Analysis"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="prose prose-sm prose-invert max-w-none">
-              <div className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">
-                {(generated?.content || insights[0]?.content || "No insights yet. Click 'Generate Report' to analyze your data.")}
+      {/* Latest Insight */}
+      {mockInsights.map((insight) => (
+        <Card key={insight.id} className={insight.id === 1 ? "border-accent/30" : ""}>
+          <CardHeader
+            className="cursor-pointer flex flex-row items-center justify-between"
+            onClick={() => setExpandedId(expandedId === insight.id ? null : insight.id)}
+          >
+            <div>
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant={
+                    insight.type === "weekly"
+                      ? "blue"
+                      : insight.type === "daily"
+                        ? "green"
+                        : "amber"
+                  }
+                >
+                  {insight.type}
+                </Badge>
+                <span className="text-xs text-ink-faint">{insight.date}</span>
               </div>
+              <h3 className="text-base font-semibold text-ink mt-2">{insight.title}</h3>
             </div>
+            {expandedId === insight.id ? (
+              <ChevronUp className="w-4 h-4 text-ink-muted flex-shrink-0" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-ink-muted flex-shrink-0" />
+            )}
+          </CardHeader>
 
-            {(generated || insights[0])?.metadata && (
-              <div className="flex gap-2 mt-4 pt-4 border-t border-zinc-800">
-                {JSON.parse(generated?.metadata || insights[0]?.metadata || "{}").readinessScore && (
-                  <Badge className="bg-zinc-800 text-zinc-400">
-                    Readiness: {JSON.parse(generated?.metadata || insights[0]?.metadata || "{}").readinessScore}/100
+          {expandedId === insight.id && (
+            <CardContent>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {insight.readiness && (
+                  <Badge variant={insight.readiness >= 80 ? "green" : insight.readiness >= 60 ? "amber" : "red"}>
+                    Readiness: {insight.readiness}
                   </Badge>
                 )}
-                {JSON.parse(generated?.metadata || insights[0]?.metadata || "{}").acwr && (
-                  <Badge className="bg-zinc-800 text-zinc-400">
-                    ACWR: {JSON.parse(generated?.metadata || insights[0]?.metadata || "{}").acwr}
+                {insight.acwr && (
+                  <Badge variant={insight.acwr <= 1.3 ? "green" : insight.acwr > 1.5 ? "red" : "amber"}>
+                    ACWR: {insight.acwr}
                   </Badge>
                 )}
-                {JSON.parse(generated?.metadata || insights[0]?.metadata || "{}").injuryRiskScore && (
-                  <Badge className="bg-zinc-800 text-zinc-400">
-                    Injury Risk: {JSON.parse(generated?.metadata || insights[0]?.metadata || "{}").injuryRiskScore}/100
+                {insight.injuryRisk && (
+                  <Badge variant={insight.injuryRisk === "low" ? "green" : insight.injuryRisk === "moderate" ? "amber" : "red"}>
+                    Injury Risk: {insight.injuryRisk}
                   </Badge>
                 )}
               </div>
-            )}
 
-            {(generated || insights[0])?.recommendations && (
-              <div className="mt-4 space-y-2">
-                <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Recommendations</p>
-                {JSON.parse(generated?.recommendations || insights[0]?.recommendations || "[]").map((r: string, i: number) => (
-                  <div key={i} className="flex items-start gap-2 text-xs text-zinc-400">
-                    <Target className="h-3 w-3 mt-0.5 text-blue-400 flex-shrink-0" />
-                    <span>{r}</span>
-                  </div>
+              <div className="prose prose-sm prose-invert max-w-none">
+                {insight.content.split("\n\n").map((para, i) => (
+                  <p key={i} className="text-sm text-ink-muted leading-relaxed">
+                    {para}
+                  </p>
                 ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Historical Insights */}
-      <div>
-        <h2 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-3">Previous Reports</h2>
-        {insights.length <= 1 ? (
-          <Card className="bg-zinc-900 border-zinc-800">
-            <CardContent className="py-12 text-center text-zinc-500">
-              <Brain className="h-8 w-8 mx-auto mb-2 text-zinc-700" />
-              <p>No previous reports. Generate your first AI analysis.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {insights.slice(1).map((insight, i) => (
-              <Card key={i} className="bg-zinc-900 border-zinc-800">
-                <CardContent className="py-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-2">
-                      <Badge className="bg-blue-500/10 text-blue-400">
-                        {insight.type}
-                      </Badge>
-                      <span className="text-xs text-zinc-500">
-                        {new Date(insight.createdAt).toLocaleDateString("en-US", {
-                          month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-zinc-400 leading-relaxed line-clamp-3">
-                    {insight.content}
+              {insight.recommendations.length > 0 && (
+                <div className="mt-4 p-3 rounded-lg bg-accent-subtle border border-accent/20">
+                  <p className="text-xs font-semibold text-accent mb-2 flex items-center gap-1.5">
+                    <Lightbulb className="w-3.5 h-3.5" />
+                    Recommendations
                   </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
+                  <ul className="space-y-1">
+                    {insight.recommendations.map((rec, i) => (
+                      <li key={i} className="text-sm text-ink-muted flex items-start gap-2">
+                        <span className="text-accent mt-1">•</span>
+                        {rec}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </CardContent>
+          )}
+        </Card>
+      ))}
     </div>
   );
 }

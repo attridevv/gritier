@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GRIT — Performance OS
+
+**Train like Runna. Track like Strava. Coach like MacroFactor.**
+
+An all-in-one training + nutrition + social platform that merges adaptive training plans,
+activity tracking, evidence-based nutrition coaching, and a social feed into a single
+data-rich dashboard.
+
+## Stack
+
+- **Next.js 16** (App Router, Turbopack)
+- **Clerk v7** — authentication
+- **Prisma 7** + `@prisma/adapter-pg` — ORM
+- **Neon / Supabase Postgres** — database
+- **Tailwind CSS v4** — styling
+- **Recharts** — data visualization
+- **Framer Motion** — micro-animations
+- **Lucide** — icons
+
+## Features
+
+| Area | Description |
+|---|---|
+| Dashboard | MacroFactor-style tile dashboard: readiness gauge, trends, training load, nutrition, plan compliance |
+| Training | Run + strength logging, pace/HR charts, volume tracking, 1RM estimates |
+| Plans | Runna-style adaptive plans with mesocycles, race targeting, compliance tracking |
+| Nutrition | Adaptive macro coaching: TDEE estimation, weight trends, weekly adjustments, meal logging |
+| Analytics | ACWR, training load, sleep, athlete radar, race predictions |
+| Insights | AI coaching reports (OpenAI, with rule-based fallback) |
+| Feed | Strava-style social feed with kudos and comments |
+
+## Analytics Engines
+
+- **Readiness** — sleep, HR recovery, energy, soreness, pain, training recovery → 0-100 + zone
+- **Training Load** — session load, ACWR, acute/chronic loads, fatigue index
+- **Injury Risk** — per-location risk with mobility, ACWR, and injury-history multipliers
+- **Race Prediction** — Riegel formula + VO2 max estimation
+- **Adaptive Plan** — adjusts volume/intensity from readiness, ACWR, compliance, phase
+- **Nutrition Coaching** — TDEE estimation from weight + intake trends, adaptive macro targets
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
+
+# configure environment
+cp .env.example .env
+# fill in DATABASE_URL + Clerk keys
+
+# push schema + seed demo data
+npx prisma generate
+npx prisma db push
+npm run db:seed
+
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+DATABASE_URL=postgresql://...
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
+CLERK_SECRET_KEY=sk_...
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+OPENAI_API_KEY=          # optional — falls back to rule-based insights
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Built by [Dev Attri](https://attridevv.com).

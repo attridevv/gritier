@@ -1,74 +1,49 @@
-import "server-only";
-
-import { auth, currentUser } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/db";
-
-export class UnauthorizedError extends Error {
-  constructor() {
-    super("Unauthorized");
-    this.name = "UnauthorizedError";
-  }
-}
-
-export function isUnauthorizedError(error: unknown) {
-  return error instanceof UnauthorizedError;
-}
+import { prisma } from "./db";
+import { auth } from "@clerk/nextjs/server";
 
 export async function getCurrentDbUser() {
-  const { userId: clerkId } = await auth();
+  const { userId, sessionClaims } = await auth();
 
-  if (!clerkId) return null;
+  if (!userId) return null;
 
-  const existingUser = await prisma.user.findUnique({ where: { clerkId } });
+  let user = await prisma.user.findUnique({
+    where: { clerkId: userId },
+    include: { profile: true },
+  });
 
-  if (existingUser) {
-    const clerkUser = await currentUser();
-    if (clerkUser) {
-      const name =
-        [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") ||
-        clerkUser.username ||
-        existingUser.name;
-      const image = clerkUser.imageUrl || existingUser.image;
-      if (name !== existingUser.name || image !== existingUser.image) {
-        return prisma.user.update({
-          where: { id: existingUser.id },
-          data: { name, image },
-        });
-      }
-    }
-    return existingUser;
-  }
-
-  const clerkUser = await currentUser();
-
-  if (!clerkUser) return null;
-
-  const email =
-    clerkUser.primaryEmailAddress?.emailAddress ||
-    clerkUser.emailAddresses[0]?.emailAddress ||
-    `${clerkId}@gritier.local`;
-  const name =
-    [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") ||
-    clerkUser.username ||
-    null;
-  const image = clerkUser.imageUrl || null;
-
-  try {
-    return await prisma.user.create({
-      data: { clerkId, email, name, image },
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        clerkId: userId,
+        email: (sessionClaims?.email as string) ?? "",
+        name: (sessionClaims?.name as string) ?? null,
+        image: (sessionClaims?.image as string) ?? null,
+      },
+      include: { profile: true },
     });
-  } catch (error: any) {
-    if (error?.code === "P2002") {
-      return prisma.user.findUnique({ where: { clerkId } });
+  } else {
+    const clerkMeta = await auth();
+    if (
+      (clerkMeta.sessionClaims?.name && user.name !== clerkMeta.sessionClaims?.name) ||
+      (clerkMeta.sessionClaims?.image && user.image !== clerkMeta.sessionClaims?.image)
+    ) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          name: (clerkMeta.sessionClaims?.name as string) ?? user.name,
+          image: (clerkMeta.sessionClaims?.image as string) ?? user.image,
+        },
+      });
     }
-    throw error;
   }
+
+  return user;
 }
 
 export async function requireCurrentDbUser() {
   const user = await getCurrentDbUser();
-
-  if (!user) throw new UnauthorizedError();
-
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
   return user;
 }

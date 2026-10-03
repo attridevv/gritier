@@ -1,68 +1,51 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+export function calcEpley1RM(weight: number, reps: number): number {
+  if (reps === 1) return weight;
+  return weight * (1 + reps / 30);
 }
 
-export function calculate1RM(weight: number, reps: number): number {
-  // Epley formula
-  return Math.round(weight * (1 + reps / 30));
+export function paceToSeconds(pace: number): number {
+  return pace * 60;
 }
 
-export function calculateVolumeLoad(sets: number, reps: number, weight: number): number {
-  return sets * reps * weight;
+export function secondsToPace(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.round(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
-export function calculatePace(distanceKm: number, durationSeconds: number): number {
-  // Returns min/km
-  const paceSeconds = durationSeconds / distanceKm;
-  return paceSeconds / 60;
+export function kmToMiles(km: number): number {
+  return km * 0.621371;
 }
 
-export function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
+export function milesToKm(miles: number): number {
+  return miles / 0.621371;
 }
 
-export function getWeekNumber(date: Date): number {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+export function riegelPredict(knownTime: number, knownDist: number, targetDist: number): number {
+  return knownTime * Math.pow(targetDist / knownDist, 1.06);
 }
 
-export function calculateRecoveryScore(checkIn: {
-  sleepQuality?: number;
-  energyLevel?: number;
-  soreness?: number;
-  stressLevel?: number;
-  restingHeartRate?: number;
-}): { overall: number; sleep: number; fatigue: number; readiness: number; trend: "improving" | "stable" | "declining" } {
-  const sleep = (checkIn.sleepQuality || 5) * 10;
-  const fatigue = 100 - ((checkIn.soreness || 5) * 5 + (checkIn.stressLevel || 5) * 5);
-  const readiness = ((checkIn.energyLevel || 5) * 10 + (100 - (checkIn.restingHeartRate || 60))) / 2;
-  const overall = Math.round((sleep + fatigue + readiness) / 3);
-  
-  let trend: "improving" | "stable" | "declining" = "stable";
-  if (overall >= 75) trend = "improving";
-  else if (overall < 50) trend = "declining";
-  
-  return {
-    overall: Math.min(100, Math.max(0, overall)),
-    sleep: Math.min(100, Math.max(0, sleep)),
-    fatigue: Math.min(100, Math.max(0, fatigue)),
-    readiness: Math.min(100, Math.max(0, readiness)),
-    trend,
-  };
+export function estimateVO2Max(distanceKm: number, timeSeconds: number): number {
+  const velocity = (distanceKm * 1000) / timeSeconds;
+  const vo2 = -4.60 + 0.182258 * velocity + 0.000104 * velocity * velocity;
+  const pctMax = 0.8 + 0.1894393 * Math.exp(-0.012778 * timeSeconds / 60) + 0.2989558 * Math.exp(-0.1932605 * timeSeconds / 60);
+  return vo2 / pctMax;
 }
 
-export function getPainLevel(pain: number): "green" | "yellow" | "red" {
-  if (pain <= 3) return "green";
-  if (pain <= 6) return "yellow";
-  return "red";
+export function formatDistance(km: number): string {
+  if (km >= 1) return `${km.toFixed(1)} km`;
+  return `${(km * 1000).toFixed(0)} m`;
+}
+
+export function formatDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.round(seconds % 60);
+  if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+export function getWeekNumber(date: Date, startDate: Date): number {
+  const diff = date.getTime() - startDate.getTime();
+  return Math.floor(diff / (7 * 24 * 60 * 60 * 1000)) + 1;
 }
